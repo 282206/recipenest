@@ -1,0 +1,13 @@
+{% extends "recipes/base.html" %}
+{% block title %}Delete recipe | RecipeNest{% endblock %}
+{% block content %}
+<div class="form-wrap">
+  <h1 class="page-title">Delete {{ recipe.title }}?</h1>
+  <p class="sub mb-4">This removes the recipe and its photo from RecipeNest. You can’t undo this.</p>
+  <form method="post" class="card-panel d-flex flex-wrap gap-2">
+    {% csrf_token %}
+    <button class="btn btn-danger-line confirming" type="submit">Delete recipe</button>
+    <a class="btn btn-line" href="{% url 'detail' recipe.pk %}">Keep it</a>
+  </form>
+</div>
+{% endblock %}

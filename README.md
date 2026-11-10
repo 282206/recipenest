@@ -1,6 +1,6 @@
 # RecipeNest
 
-**Live website:** https://recipenest-3grn.onrender.com/
+**Live demo (static single-page version):** https://recipenest-3grn.onrender.com/
 
 A recipe book web app for the Web Technologies (AIM3140) project.
 Add recipes with photos, search them by ingredient, filter veg and non-veg, and rate them.
@@ -69,10 +69,29 @@ exit
 ```
 (Use the full path to `setup.sql` if MySQL can't find it.)
 
-**3. Put your MySQL password in two places**
+**3. Set your MySQL password as an environment variable**
 
-- `recipenest/settings.py`: `"PASSWORD": ... "root"` → your password
-- `cgi-feedback/cgi-bin/rate.py`: `DB_CONFIG["password"]` → your password
+Don't type your password into any file. Both `recipenest/settings.py` and `cgi-feedback/cgi-bin/rate.py` read it from `MYSQL_PASSWORD`. You can also set `DJANGO_SECRET_KEY` (optional for local use).
+
+Windows CMD:
+```bat
+set MYSQL_PASSWORD=your-mysql-password
+set DJANGO_SECRET_KEY=any-long-random-string
+```
+
+PowerShell:
+```powershell
+$env:MYSQL_PASSWORD="your-mysql-password"
+$env:DJANGO_SECRET_KEY="any-long-random-string"
+```
+
+Mac/Linux:
+```bash
+export MYSQL_PASSWORD="your-mysql-password"
+export DJANGO_SECRET_KEY="any-long-random-string"
+```
+
+These only last for the current terminal window, so set them in every terminal you use for the Django and CGI servers (steps 4 and "Running it").
 
 **4. Create Django tables, load starter recipes, make an admin user**
 

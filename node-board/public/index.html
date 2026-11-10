@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="quickBrowse">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Quick browse | RecipeNest</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M5 20h30a15 13 0 0 1-30 0z' fill='%232E5A3B'/%3E%3Crect x='3' y='17' width='34' height='5' rx='2.5' fill='%23E3A01B'/%3E%3Cpath d='M15 13c-2-3 2-5 0-8M22 13c-2-3 2-5 0-8' stroke='%23E3A01B' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Young+Serif&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.3/angular.min.js"></script>
+  <style>
+    /* Same design tokens as the Django site (recipes/static/recipes/css/style.css) */
+    :root {
+      --bg: #FFFFFF; --surface: #FFFFFF; --steel: #EEF1EF; --ink: #1E2320; --muted: #5E6862; --line: #DCE2DE;
+      --leaf: #2E5A3B; --on-leaf: #FFFFFF; --heading: #2E5A3B; --turmeric: #E3A01B; --veg: #1F8A3A;
+      --chili: #A8322A; --chili-soft: #F6DEDB;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #141816; --surface: #1C211E; --steel: #262D29; --ink: #E8ECE9; --muted: #A3ADA7; --line: #333C37;
+        --leaf: #7FB98E; --on-leaf: #10160F; --heading: #A9D6B4; --turmeric: #F0B840; --veg: #5CC77A;
+        --chili: #EE8478; --chili-soft: #3A2421;
+        color-scheme: dark;
+      }
+    }
+    :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+    body { font-family: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); line-height: 1.55; }
+    h1, .wordmark { font-family: "Young Serif", Georgia, serif; font-weight: 400; }
+    [ng-cloak] { display: none !important; }
+    :focus-visible { outline: 3px solid var(--turmeric); outline-offset: 2px; }
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .9rem 0; border-bottom: 1px solid var(--line); }
+    .wordmark { font-size: 1.5rem; color: var(--heading); text-decoration: none; display: inline-flex; align-items: center; }
+    .wordmark span { color: var(--turmeric); }
+    .wordmark svg { width: 28px; height: 28px; margin-right: .45rem; }
+    .back { color: var(--leaf); font-weight: 700; text-decoration: none; }
+    .back:hover { text-decoration: underline; }
+    .page-title { color: var(--heading); font-size: clamp(2rem, 4.5vw, 2.8rem); margin: 1.5rem 0 .4rem; }
+    .sub { color: var(--muted); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin: 1.25rem 0 1.5rem; }
+    .seg { display: inline-flex; }
+    .seg button { margin-left: -1px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: .5rem 1.1rem; font-weight: 700; }
+    .seg button:first-child { border-radius: 999px 0 0 999px; margin-left: 0; }
+    .seg button:last-child { border-radius: 0 999px 999px 0; }
+    .seg button.active { background: var(--leaf); color: var(--on-leaf); border-color: var(--leaf); position: relative; }
+    .form-control, .form-select { border-radius: 12px; background-color: var(--surface); color: var(--ink); border-color: var(--line); }
+    .form-control:focus, .form-select:focus { border-color: var(--leaf); box-shadow: 0 0 0 3px rgba(46,90,59,.25); background-color: var(--surface); color: var(--ink); }
+    .row-item { display: grid; grid-template-columns: 64px 1fr auto; gap: 1rem; align-items: center; padding: .85rem 0; border-bottom: 1px solid var(--line); }
+    .thumb { width: 64px; height: 64px; border-radius: 14px; object-fit: cover; background: var(--steel); }
+    .placeholder-photo { display: flex; align-items: center; justify-content: center; background: var(--steel); color: var(--heading); font-family: "Young Serif", Georgia, serif; font-size: 1.7rem; }
+    .placeholder-photo.nonveg { background: var(--chili-soft); color: var(--chili); }
+    .row-title { font-weight: 700; font-size: 1.05rem; color: var(--ink); text-decoration: none; display: inline-flex; align-items: center; }
+    .row-title:hover { color: var(--leaf); text-decoration: underline; }
+    .mins { font-weight: 700; background: var(--steel); border-radius: 999px; padding: .25rem .75rem; white-space: nowrap; }
+    .food-mark { display: inline-block; width: 16px; height: 16px; border: 2px solid currentColor; border-radius: 3px; position: relative; margin-right: .4rem; flex-shrink: 0; }
+    .food-mark.veg { color: var(--veg); }
+    .food-mark.veg::after { content: ""; position: absolute; inset: 3px; background: currentColor; border-radius: 50%; }
+    .food-mark.nonveg { color: var(--chili); }
+    .food-mark.nonveg::after { content: ""; position: absolute; left: 1px; top: 2px; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 8px solid currentColor; }
+    .alert-danger { background: var(--chili-soft); color: var(--ink); border-color: var(--chili); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+  </style>
+  <script>
+    // A photo that fails to load becomes the letter placeholder
+    function rnPhotoFail(img) {
+      var box = document.createElement("div");
+      box.className = "thumb placeholder-photo" + (img.dataset.nonveg === "true" ? " nonveg" : "");
+      box.textContent = img.dataset.letter || "";
+      img.replaceWith(box);
+    }
+  </script>
+</head>
+<body ng-controller="BrowseController as vm">
+  <div class="container" style="max-width: 860px;">
+    <header class="top">
+      <a class="wordmark" href="http://127.0.0.1:8000/">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M5 20h30a15 13 0 0 1-30 0z" style="fill:var(--leaf)"/><rect x="3" y="17" width="34" height="5" rx="2.5" fill="#E3A01B"/><path d="M15 13c-2-3 2-5 0-8M22 13c-2-3 2-5 0-8" stroke="#E3A01B" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+        Recipe<span>Nest</span>
+      </a>
+      <a class="back" href="http://127.0.0.1:8000/">‹ Back to RecipeNest</a>
+    </header>
+
+    <h1 class="page-title">Quick browse</h1>
+    <p class="sub">Every recipe on one screen. Filter by type and cuisine, and sort by cooking time. Served by Node.js, drawn by AngularJS.</p>
+
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="Filter by type">
+        <button type="button" ng-class="{active: vm.type === 'all'}" ng-attr-aria-pressed="{{ vm.type === 'all' }}" ng-click="vm.type = 'all'">All</button>
+        <button type="button" ng-class="{active: vm.type === 'veg'}" ng-attr-aria-pressed="{{ vm.type === 'veg' }}" ng-click="vm.type = 'veg'">Veg</button>
+        <button type="button" ng-class="{active: vm.type === 'nonveg'}" ng-attr-aria-pressed="{{ vm.type === 'nonveg' }}" ng-click="vm.type = 'nonveg'">Non-veg</button>
+      </div>
+      <label class="visually-hidden" for="q">Filter by name</label>
+      <input id="q" class="form-control" style="max-width: 200px;" placeholder="Filter by name" ng-model="vm.text">
+      <label class="visually-hidden" for="cuisine">Cuisine</label>
+      <select id="cuisine" class="form-select" style="max-width: 190px;" ng-model="vm.cuisine">
+        <option value="all">All cuisines</option>
+        <option ng-repeat="c in vm.cuisines" value="{{ c.name }}">{{ c.emoji }} {{ c.name }}</option>
+      </select>
+      <label class="visually-hidden" for="sort">Sort</label>
+      <select id="sort" class="form-select" style="max-width: 180px;" ng-model="vm.sort">
+        <option value="title">Sort by name</option>
+        <option value="cook_time">Quickest first</option>
+        <option value="-cook_time">Longest first</option>
+      </select>
+    </div>
+
+    <p class="sub" ng-cloak ng-if="!vm.loading && !vm.error">
+      Showing {{ vm.filtered.length }} of {{ vm.recipes.length }} recipes
+    </p>
+    <p ng-if="vm.loading">Loading recipes…</p>
+    <div class="alert alert-danger" ng-cloak ng-if="vm.error">{{ vm.error }}</div>
+
+    <div ng-cloak>
+      <div class="row-item"
+           ng-repeat="r in vm.filtered = (vm.recipes | filter:vm.byType | filter:vm.byCuisine | filter:{title: vm.text} | orderBy:[vm.sort, 'title']) track by r.id">
+        <img class="thumb" ng-if="r.image" ng-src="{{ r.image }}" alt="" loading="lazy"
+             data-letter="{{ r.title.charAt(0) }}" data-nonveg="{{ !r.is_veg }}" onerror="rnPhotoFail(this)">
+        <div class="thumb placeholder-photo" ng-class="{nonveg: !r.is_veg}" ng-if="!r.image" aria-hidden="true">{{ r.title.charAt(0) }}</div>
+        <div>
+          <a class="row-title" ng-href="http://127.0.0.1:8000/recipe/{{ r.id }}/">
+            <span class="food-mark" ng-class="r.is_veg ? 'veg' : 'nonveg'" role="img" aria-label="{{ r.is_veg ? 'Veg' : 'Non-veg' }}"></span>{{ r.title }}
+          </a>
+          <div class="sub">{{ r.cuisine_emoji }} {{ r.cuisine }}. {{ r.ingredients.slice(0, 3).join(', ') }}<span ng-if="r.ingredients.length > 3">, +{{ r.ingredients.length - 3 }} more</span></div>
+        </div>
+        <span class="mins">{{ r.cook_time }} min</span>
+      </div>
+      <p ng-if="!vm.loading && !vm.error && vm.filtered.length === 0">No recipes match. Clear the filters to see all of them.</p>
+    </div>
+  </div>
+
+  <script>
+    angular.module("quickBrowse", [])
+      .controller("BrowseController", ["$http", function ($http) {
+        const vm = this;
+        vm.recipes = [];
+        vm.cuisines = [];
+        vm.type = "all";
+        vm.cuisine = "all";
+        vm.text = "";
+        vm.sort = "title";
+        vm.loading = true;
+        vm.error = "";
+
+        vm.byType = function (recipe) {
+          if (vm.type === "veg") return recipe.is_veg;
+          if (vm.type === "nonveg") return !recipe.is_veg;
+          return true;
+        };
+        vm.byCuisine = function (recipe) {
+          return vm.cuisine === "all" || recipe.cuisine === vm.cuisine;
+        };
+
+        // Node.js forwards this request to Django's JSON API
+        $http.get("/api/recipes/")
+          .then(function (response) {
+            vm.recipes = response.data.recipes;
+            // One dropdown entry per cuisine that has recipes, A to Z
+            const seen = {};
+            vm.recipes.forEach(function (r) { seen[r.cuisine] = r.cuisine_emoji; });
+            vm.cuisines = Object.keys(seen).sort().map(function (name) { return { name: name, emoji: seen[name] }; });
+          })
+          .catch(function () {
+            vm.error = "Couldn’t load recipes. Start the Django server on port 8000, then refresh.";
+          })
+          .finally(function () {
+            vm.loading = false;
+          });
+      }]);
+  </script>
+</body>
+</html>

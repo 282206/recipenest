@@ -1,0 +1,106 @@
+{% extends "recipes/base.html" %}
+{% block title %}Quick browse | RecipeNest{% endblock %}
+
+{% block head %}
+<!-- Online version of node-board/public/index.html: same AngularJS app, served by Django -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.3/angular.min.js"></script>
+<style>
+  [ng-cloak] { display: none !important; }
+  a.row-title { text-decoration: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+{# verbatim: let AngularJS, not Django, handle the {{ }} below #}
+{% verbatim %}
+<div style="max-width: 860px;" ng-app="quickBrowse" ng-controller="BrowseController as vm">
+  <h1 class="page-title">Quick browse</h1>
+  <p class="sub">Every recipe on one screen. Filter by type and cuisine, and sort by cooking time.</p>
+
+  <div class="toolbar">
+    <div class="seg" role="group" aria-label="Filter by type">
+      <button type="button" ng-attr-aria-pressed="{{ vm.type === 'all' }}" ng-click="vm.type = 'all'">All</button>
+      <button type="button" ng-attr-aria-pressed="{{ vm.type === 'veg' }}" ng-click="vm.type = 'veg'">Veg</button>
+      <button type="button" ng-attr-aria-pressed="{{ vm.type === 'nonveg' }}" ng-click="vm.type = 'nonveg'">Non-veg</button>
+    </div>
+    <label class="visually-hidden" for="q">Filter by name</label>
+    <input id="q" class="form-control" style="max-width: 200px;" placeholder="Filter by name" ng-model="vm.text">
+    <label class="visually-hidden" for="b-cuisine">Cuisine</label>
+    <select id="b-cuisine" class="form-select" style="max-width: 190px;" ng-model="vm.cuisine">
+      <option value="all">All cuisines</option>
+      <option ng-repeat="c in vm.cuisines" value="{{ c.name }}">{{ c.emoji }} {{ c.name }}</option>
+    </select>
+    <label class="visually-hidden" for="sort">Sort</label>
+    <select id="sort" class="form-select" style="max-width: 180px;" ng-model="vm.sort">
+      <option value="title">Sort by name</option>
+      <option value="cook_time">Quickest first</option>
+      <option value="-cook_time">Longest first</option>
+    </select>
+  </div>
+
+  <p class="sub" ng-cloak ng-if="!vm.loading && !vm.error">
+    Showing {{ vm.filtered.length }} of {{ vm.recipes.length }} recipes
+  </p>
+  <p ng-if="vm.loading">Loading recipes…</p>
+  <div class="alert alert-danger" ng-cloak ng-if="vm.error">{{ vm.error }}</div>
+
+  <div ng-cloak>
+    <div class="row-item" style="--i:{{ $index < 20 ? $index : 20 }}"
+         ng-repeat="r in vm.filtered = (vm.recipes | filter:vm.byType | filter:vm.byCuisine | filter:{title: vm.text} | orderBy:[vm.sort, 'title']) track by r.id">
+      <img class="thumb" ng-if="r.image" ng-src="{{ r.image }}" alt="" loading="lazy"
+           data-letter="{{ r.title.charAt(0) }}" ng-attr-data-nonveg="{{ r.is_veg ? undefined : '1' }}" onerror="rnPhotoFail(this)">
+      <div class="thumb placeholder-photo" ng-class="{nonveg: !r.is_veg}" ng-if="!r.image" aria-hidden="true">{{ r.title.charAt(0) }}</div>
+      <div>
+        <a class="row-title" ng-href="/recipe/{{ r.id }}/">
+          <span class="food-mark" ng-class="r.is_veg ? 'veg' : 'nonveg'" role="img" aria-label="{{ r.is_veg ? 'Veg' : 'Non-veg' }}"></span>{{ r.title }}
+        </a>
+        <div class="sub">{{ r.cuisine_emoji }} {{ r.cuisine }}. {{ r.ingredients.slice(0, 3).join(', ') }}<span ng-if="r.ingredients.length > 3">, +{{ r.ingredients.length - 3 }} more</span></div>
+      </div>
+      <span class="mins">{{ r.cook_time }} min</span>
+    </div>
+    <p ng-if="!vm.loading && !vm.error && vm.filtered.length === 0">No recipes match. Clear the filters to see all of them.</p>
+  </div>
+</div>
+{% endverbatim %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  angular.module("quickBrowse", [])
+    .controller("BrowseController", ["$http", function ($http) {
+      const vm = this;
+      vm.recipes = [];
+      vm.cuisines = [];
+      vm.type = "all";
+      vm.cuisine = "all";
+      vm.text = "";
+      vm.sort = "title";
+      vm.loading = true;
+      vm.error = "";
+
+      vm.byType = function (recipe) {
+        if (vm.type === "veg") return recipe.is_veg;
+        if (vm.type === "nonveg") return !recipe.is_veg;
+        return true;
+      };
+      vm.byCuisine = function (recipe) {
+        return vm.cuisine === "all" || recipe.cuisine === vm.cuisine;
+      };
+
+      // Same Django JSON API the Node.js version uses
+      $http.get("{% url 'api_recipes' %}")
+        .then(function (response) {
+          vm.recipes = response.data.recipes;
+          const seen = {};
+          vm.recipes.forEach(function (r) { seen[r.cuisine] = r.cuisine_emoji; });
+          vm.cuisines = Object.keys(seen).sort().map(function (name) { return { name: name, emoji: seen[name] }; });
+        })
+        .catch(function () {
+          vm.error = "Couldn’t load recipes. Refresh the page to try again.";
+        })
+        .finally(function () {
+          vm.loading = false;
+        });
+    }]);
+</script>
+{% endblock %}

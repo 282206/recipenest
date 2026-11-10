@@ -1,0 +1,16 @@
+{% extends "recipes/base.html" %}
+{% block title %}Saved recipes | RecipeNest{% endblock %}
+{% block content %}
+<h1 class="page-title">Saved recipes</h1>
+<p class="sub mb-4">Your favourites, kept on this device.</p>
+<!-- favorites.js reads the saved ids from localStorage and loads the cards from /api/recipes/?ids=... -->
+<div id="saved-grid" class="row g-4" data-api="{% url 'api_recipes' %}" aria-live="polite">
+  <noscript><div class="col-12"><div class="empty-state"><p>Saved recipes are kept in your browser, so this page needs JavaScript.</p>
+    <a class="btn btn-leaf" href="{% url 'home' %}">Browse recipes</a></div></div></noscript>
+</div>
+<template id="saved-empty">
+  <div class="col-12"><div class="empty-state"><div class="big" aria-hidden="true">♡</div>
+    <p class="mt-2">Nothing saved yet. Tap the heart on any recipe to keep it here.</p>
+    <a class="btn btn-leaf" href="{% url 'home' %}">Browse recipes</a></div></div>
+</template>
+{% endblock %}

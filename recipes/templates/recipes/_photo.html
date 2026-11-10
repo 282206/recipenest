@@ -1,0 +1,5 @@
+{% comment %}
+  Recipe photo, or the first-letter placeholder when there is none.
+  Use: {% include "recipes/_photo.html" with recipe=r cls="recipe-photo" eager=False %}
+  Same markup as photoHtml() in static/recipes/js/cards.js.
+{% endcomment %}{% with src=recipe.photo_url %}{% if src %}<img class="{{ cls }}" src="{{ src }}" alt="{{ recipe.title }}"{% if not eager %} loading="lazy"{% endif %} decoding="async" data-letter="{{ recipe.title|first }}"{% if not recipe.is_veg %} data-nonveg="1"{% endif %} onerror="rnPhotoFail(this)">{% else %}<div class="{{ cls }} placeholder-photo{% if not recipe.is_veg %} nonveg{% endif %}" aria-hidden="true">{{ recipe.title|first }}</div>{% endif %}{% endwith %}

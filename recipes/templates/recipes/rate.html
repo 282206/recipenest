@@ -1,0 +1,59 @@
+{% extends "recipes/base.html" %}
+{% block title %}Rate a recipe | RecipeNest{% endblock %}
+
+{% block content %}
+<!-- Online version of the CGI page in cgi-feedback/: same form, same `ratings` table -->
+<div class="form-wrap">
+  <h1 class="page-title">Rate a recipe</h1>
+  <p class="sub mb-4">Cooked something from RecipeNest? Tell others how it turned out.</p>
+
+  <form method="post" class="card-panel mb-5" novalidate>
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.name.id_for_label }}">Your name</label>
+      {{ form.name }}
+      {% if form.name.errors %}<div class="invalid-feedback d-block">{{ form.name.errors|first }}</div>{% endif %}
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.recipe.id_for_label }}">Recipe</label>
+      {{ form.recipe }}
+      {% if form.recipe.errors %}<div class="invalid-feedback d-block">{{ form.recipe.errors|first }}</div>{% endif %}
+    </div>
+    <fieldset class="mb-3">
+      <legend class="form-label fs-6 mb-1">Rating</legend>
+      <!-- Stars are listed 5 to 1 and flipped with CSS, so hovering lights up the stars before it -->
+      <div class="star-pick">
+        {% for radio in form.stars %}{{ radio.tag }}<label for="{{ radio.id_for_label }}" title="{{ radio.choice_label }}">★</label>{% endfor %}
+      </div>
+      {% if form.stars.errors %}<div class="text-danger small mt-1">{{ form.stars.errors|first }}</div>{% endif %}
+    </fieldset>
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.comment.id_for_label }}">Comment <span class="hint">optional</span></label>
+      {{ form.comment }}
+    </div>
+    <button class="btn btn-leaf" type="submit">Submit rating</button>
+  </form>
+
+  <h2 class="section-title">All ratings</h2>
+  {% if ratings %}
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead><tr><th>Name</th><th>Recipe</th><th>Rating</th><th>Comment</th><th>Date</th></tr></thead>
+        <tbody>
+          {% for r in ratings %}
+            <tr>
+              <td>{{ r.name }}</td>
+              <td>{{ r.recipe }}</td>
+              <td class="stars" aria-label="{{ r.stars }} out of 5">{% for _ in "x"|ljust:r.stars %}★{% endfor %}</td>
+              <td>{{ r.comment|default:"" }}</td>
+              <td class="text-nowrap">{{ r.created_at|date:"j M Y" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p>No ratings yet. Be the first to rate a recipe.</p>
+  {% endif %}
+</div>
+{% endblock %}

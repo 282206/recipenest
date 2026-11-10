@@ -1,0 +1,125 @@
+{% extends "recipes/base.html" %}
+{% load static %}
+{% block content %}
+<section class="hero">
+  <div>
+    <h1>What’s in your kitchen?</h1>
+    <p class="hero-sub">Type an ingredient you have and RecipeNest finds dishes you can cook with it, from dal to dumplings.</p>
+    <div class="hero-actions">
+      <!-- Works without JS (GET ?q=); search.js turns it into a live jQuery AJAX search -->
+      <form class="search-form" id="search-form" method="get" action="{% url 'home' %}#all-recipes" role="search">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <label class="visually-hidden" for="search">Search by ingredient or dish</label>
+          <input id="search" name="q" class="form-control search-box" type="search" autocomplete="off"
+                 placeholder="Try paneer…" value="{{ filters.q }}">
+        </div>
+        {% if filters.type != "all" %}<input type="hidden" name="type" value="{{ filters.type }}">{% endif %}
+        {% if filters.cuisine != "all" %}<input type="hidden" name="cuisine" value="{{ filters.cuisine }}">{% endif %}
+        {% if filters.sort != "rec" %}<input type="hidden" name="sort" value="{{ filters.sort }}">{% endif %}
+      </form>
+      <a class="btn-surprise" id="surprise" href="{% url 'surprise' %}"><span class="dice" aria-hidden="true">🎲</span>Surprise me</a>
+    </div>
+    <div class="chips" aria-label="Popular searches">
+      {% for word, url in popular_searches %}<a class="chip" href="{{ url }}" data-chip="{{ word }}">{{ word }}</a>
+      {% endfor %}
+    </div>
+    <p class="hero-stats"><strong>{{ total_recipes }}</strong> recipes from <strong>{{ total_cuisines }}</strong> cuisines</p>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+    {% if hero_photos %}
+      {% for r in hero_photos %}<img class="hero-photo p{{ forloop.counter }}" src="{{ r.photo_url }}" alt="" onerror="this.remove()">{% endfor %}
+    {% else %}
+      <svg viewBox="0 0 300 260" style="width:100%;height:100%"><path class="steam s1" d="M110 95 C 95 75, 125 60, 110 35"/><path class="steam s2" d="M150 90 C 135 70, 165 55, 150 25"/><path class="steam s3" d="M190 95 C 175 75, 205 60, 190 35"/><g><ellipse class="bowl-food" cx="150" cy="128" rx="118" ry="22"/><circle class="bowl-leaf" cx="120" cy="124" r="7"/><circle class="bowl-leaf" cx="172" cy="130" r="6"/><path class="bowl-body" d="M28 130 Q 40 230 150 232 Q 260 230 272 130 Z"/><rect class="bowl-rim" x="22" y="124" width="256" height="14" rx="7"/><rect class="bowl-rim" x="118" y="232" width="64" height="10" rx="5"/></g></svg>
+    {% endif %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head"><h2>Explore by cuisine</h2><p>Tap a cuisine to filter the recipes.</p></div>
+  <div class="hscroll" id="cuisine-strip" aria-label="Filter by cuisine">
+    {% for t in tiles %}
+      <a class="cuisine-tile" href="{{ t.url }}" data-cuisine="{{ t.name }}" data-emoji="{{ t.emoji }}" {% if t.active %}aria-current="true"{% endif %}>
+        <span class="cuisine-icon" style="--tint:{{ t.tint }}" aria-hidden="true">{{ t.emoji }}</span>
+        <span class="cuisine-name">{{ t.label }}</span>
+        <span class="cuisine-count">{{ t.count }} recipes</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+<div id="featured" {% if filtering %}hidden{% endif %}>
+  {% if pick %}{% with r=pick c=pick.cuisine_info %}
+  <section class="section">
+    <div class="pick">
+      <div class="pick-media">{% include "recipes/_photo.html" with recipe=r cls="pick-photo" eager=True %}</div>
+      <div class="pick-body">
+        <p class="pick-label">Today’s pick</p>
+        <h3>{{ r.title }}</h3>
+        <div class="tags mt-0">
+          <span class="tag">{% include "recipes/_mark.html" with veg=r.is_veg %}{% if r.is_veg %}Veg{% else %}Non-veg{% endif %}</span>
+          <span class="tag">{{ c.emoji }} {{ c.name }}</span>
+          <span class="tag">{{ r.cook_time }} minutes</span>
+        </div>
+        {% with n=r.ingredient_list|length %}
+        <p class="pick-ings">You’ll need {{ r.short_ingredients }}{% if n > 4 %} and {{ n|add:"-4" }} more{% endif %}.</p>
+        {% endwith %}
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-leaf btn-lg" href="{% url 'detail' r.pk %}">Start cooking</a>
+          <button class="btn btn-line btn-lg btn-save" type="button" data-fav="{{ r.pk }}" data-title="{{ r.title }}" aria-pressed="false">♡ Save recipe</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  {% endwith %}{% endif %}
+
+  <section class="section">
+    <div class="section-head"><h2>Ready in 20 minutes</h2><p>Quick fixes for busy days.</p></div>
+    <div class="hscroll quick-row">
+      {% for r in quick %}{% include "recipes/_card.html" with recipe=r i=forloop.counter0 %}{% endfor %}
+    </div>
+  </section>
+</div>
+
+<section class="section" id="all-recipes">
+  <div class="section-head"><h2 id="grid-title">{{ grid_title }}</h2><p id="result-count" aria-live="polite">{{ result_label }}</p></div>
+  <div class="filter-row">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <div class="type-filter" aria-label="Show veg or non-veg">
+        <span class="type-pill" aria-hidden="true"></span>
+        {% for t in type_links %}
+          <a href="{{ t.url }}" data-type="{{ t.value }}" {% if t.active %}aria-current="true"{% endif %}>{% if t.value != "all" %}<span class="food-mark {{ t.value }}" aria-hidden="true"></span>{% endif %}{{ t.label }}</a>
+        {% endfor %}
+      </div>
+      <span id="active-cuisine">{% if active_cuisine %}<span class="active-filter">{{ active_cuisine.emoji }} {{ active_cuisine.name }} <a href="{{ clear_cuisine_url }}" id="clear-cuisine" aria-label="Show all cuisines">×</a></span>{% endif %}</span>
+    </div>
+    <form class="sort-form" id="sort-form" method="get" action="{% url 'home' %}#all-recipes">
+      {% if filters.q %}<input type="hidden" name="q" value="{{ filters.q }}">{% endif %}
+      {% if filters.type != "all" %}<input type="hidden" name="type" value="{{ filters.type }}">{% endif %}
+      {% if filters.cuisine != "all" %}<input type="hidden" name="cuisine" value="{{ filters.cuisine }}">{% endif %}
+      <label class="visually-hidden" for="home-sort">Sort recipes</label>
+      <select id="home-sort" name="sort" class="form-select sort-select">
+        {% for value, label in sorts %}<option value="{{ value }}" {% if filters.sort == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <noscript><button class="btn btn-line" type="submit">Sort</button></noscript>
+    </form>
+  </div>
+
+  <div id="recipe-grid" class="row g-4">
+    {% for r in page_obj %}
+      {% include "recipes/_card.html" with recipe=r i=forloop.counter0 grid=True %}
+    {% empty %}
+      <div class="col-12"><div class="empty-state"><div class="big" aria-hidden="true">🥄</div>
+        <p class="mt-2">{% if filters.q %}No recipes match “{{ filters.q }}” with these filters.{% else %}No recipes match these filters.{% endif %} Try another ingredient or clear a filter.</p>
+        <a class="btn btn-leaf" href="{% url 'add' %}">Add a recipe</a></div></div>
+    {% endfor %}
+  </div>
+  <!-- Django Paginator: 24 per page. Without JS this opens the next page; search.js adds the cards in place -->
+  <a class="btn btn-line more-btn" id="show-more" href="{{ next_page_url }}" {% if not next_page_url %}hidden{% endif %}>Show more recipes</a>
+  {% if page_obj.number > 1 %}<p class="text-center sub mt-3">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}. <a href="{% url 'home' %}#all-recipes">Back to the first page</a></p>{% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'recipes/js/search.js' %}"></script>
+{% endblock %}

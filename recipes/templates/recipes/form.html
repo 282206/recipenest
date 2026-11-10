@@ -1,0 +1,81 @@
+{% extends "recipes/base.html" %}
+{% load static %}
+{% block title %}{% if mode == "add" %}Add recipe{% else %}Edit recipe{% endif %} | RecipeNest{% endblock %}
+{% block content %}
+<div class="form-wrap">
+  <h1 class="page-title">{% if mode == "add" %}Add a recipe{% else %}Edit {{ recipe.title }}{% endif %}</h1>
+  <p class="sub mb-4">Share a dish you love. Fields marked with a hint are optional.</p>
+
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+  <!-- novalidate: validate.js checks the form; Django's RecipeForm checks it again on the server -->
+  <form id="recipe-form" class="card-panel" method="post" enctype="multipart/form-data" novalidate data-mode="{{ mode }}">
+    {% csrf_token %}
+
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.title.id_for_label }}">Recipe name</label>
+      {{ form.title }}
+      <div class="invalid-feedback{% if form.title.errors %} d-block{% endif %}" data-for="title">{{ form.title.errors|first }}</div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-4">
+        <span class="form-label d-block">Type</span>
+        <div class="radio-row">
+          {% for radio in form.is_veg %}
+            <label class="radio-pill">{{ radio.tag }} <span class="food-mark {% if radio.data.value %}veg{% else %}nonveg{% endif %}" aria-hidden="true"></span>{{ radio.choice_label }}</label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="col-sm-6 col-md-4">
+        <label class="form-label" for="{{ form.cuisine.id_for_label }}">Cuisine</label>
+        {{ form.cuisine }}
+        <div class="invalid-feedback{% if form.cuisine.errors %} d-block{% endif %}" data-for="cuisine">{{ form.cuisine.errors|first }}</div>
+      </div>
+      <div class="col-sm-6 col-md-4">
+        <label class="form-label" for="{{ form.cook_time.id_for_label }}">Cooking time (minutes)</label>
+        {{ form.cook_time }}
+        <div class="invalid-feedback{% if form.cook_time.errors %} d-block{% endif %}" data-for="cook_time">{{ form.cook_time.errors|first }}</div>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.ingredients.id_for_label }}">Ingredients <span class="hint">one per line</span></label>
+      {{ form.ingredients }}
+      <div class="invalid-feedback{% if form.ingredients.errors %} d-block{% endif %}" data-for="ingredients">{{ form.ingredients.errors|first }}</div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.steps.id_for_label }}">Method <span class="hint">one step per line</span></label>
+      {{ form.steps }}
+      <div class="invalid-feedback{% if form.steps.errors %} d-block{% endif %}" data-for="steps">{{ form.steps.errors|first }}</div>
+    </div>
+
+    <div class="mb-4">
+      <label class="form-label" for="id_image">Photo <span class="hint">JPG or PNG, optional</span></label>
+      {% if recipe.image %}
+        <div class="current-photo">
+          <img src="{{ recipe.image.url }}" alt="Current photo">
+          <label class="radio-pill"><input type="checkbox" name="image-clear" id="image-clear_id"> Remove this photo</label>
+        </div>
+      {% endif %}
+      <input class="form-control" id="id_image" name="image" type="file" accept=".jpg,.jpeg,.png">
+      <div class="invalid-feedback{% if form.image.errors %} d-block{% endif %}" data-for="image">{{ form.image.errors|first }}</div>
+
+      <label class="form-label mt-3" for="{{ form.image_url.id_for_label }}">Or paste an image link <span class="hint">from the web</span></label>
+      {{ form.image_url }}
+      <div class="invalid-feedback{% if form.image_url.errors %} d-block{% endif %}" data-for="image_url">{{ form.image_url.errors|first }}</div>
+      <img id="image-preview" class="image-preview" alt="Preview of the selected photo" hidden>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-leaf" type="submit">{% if mode == "add" %}Add recipe{% else %}Save changes{% endif %}</button>
+      <a class="btn btn-line" href="{% if recipe %}{% url 'detail' recipe.pk %}{% else %}{% url 'home' %}{% endif %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'recipes/js/validate.js' %}"></script>
+{% endblock %}

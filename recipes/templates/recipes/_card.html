@@ -1,0 +1,20 @@
+{% comment %}
+  Recipe card. Same markup as cardHtml() in static/recipes/js/cards.js.
+  Use: {% include "recipes/_card.html" with recipe=r i=forloop.counter0 grid=True %}
+  grid=True wraps the card in a Bootstrap column for the main grid.
+{% endcomment %}{% with c=recipe.cuisine_info n_ing=recipe.ingredient_list|length n_steps=recipe.step_list|length %}
+{% if grid %}<div class="col-sm-6 col-lg-4 col-xl-3">{% endif %}
+<article class="rcard card-in" style="--i:{% if i > 10 %}10{% else %}{{ i|default:0 }}{% endif %}">
+  <div class="rcard-media">
+    {% include "recipes/_photo.html" with cls="recipe-photo" eager=False %}
+    <span class="chip-cuisine">{{ c.emoji }} {{ c.name }}</span>
+    <span class="time-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{{ recipe.cook_time }} min</span>
+    <button class="fav" type="button" data-fav="{{ recipe.pk }}" data-title="{{ recipe.title }}" aria-pressed="false" aria-label="Save {{ recipe.title }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.4-9.3-9.2C1.4 7.6 3.9 4 7.4 4c2 0 3.5 1.1 4.6 2.6C13.1 5.1 14.6 4 16.6 4c3.5 0 6 3.6 4.7 7.3-1.8 4.8-9.3 9.2-9.3 9.2z" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+  </div>
+  <div class="rcard-body">
+    <h3 class="rcard-title"><a class="rcard-link" href="{% url 'detail' recipe.pk %}">{% include "recipes/_mark.html" with veg=recipe.is_veg %}{{ recipe.title }}</a></h3>
+    <p class="rcard-meta">{{ n_ing }} ingredient{{ n_ing|pluralize }}, {{ n_steps }} step{{ n_steps|pluralize }}</p>
+  </div>
+</article>
+{% if grid %}</div>{% endif %}
+{% endwith %}
