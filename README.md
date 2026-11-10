@@ -1,9 +1,10 @@
 # RecipeNest
 
-**Live demo (static single-page version):** https://recipenest-3grn.onrender.com/
+Live website: https://recipenest-3grn.onrender.com/
 
-A recipe book web app for the Web Technologies (AIM3140) project.
-Add recipes with photos, search them by ingredient, filter veg and non-veg, and rate them.
+85 recipes from 14 cuisines with photos from Wikipedia. Search by ingredient, filter by cuisine
+and veg / non-veg, save favourites, cook step by step in cook mode, and rate what you made.
+Works on phones and in dark mode.
 
 Made by Gitika Gangwar.
 
@@ -29,104 +30,3 @@ RecipeNest/
 └── node-board/              "Quick browse" page (Node.js + AngularJS)
 ```
 
-## Syllabus coverage
-
-| Topic | Where it is used |
-|---|---|
-| HTML, lists, tables, images, links, forms | All templates; add form has text, number, radio, textarea and file inputs; ratings table on the CGI page |
-| CSS: inline, internal, external | `style="..."` in `detail.html`, `<style>` block in `base.html`, `static/recipes/css/style.css` |
-| CSS box model, selectors, fonts, colors | `style.css` |
-| Bootstrap grid, components, responsive design | Navbar, recipe card grid, alerts, form controls; works on mobile |
-| JavaScript events, DOM, form validation | `validate.js` checks the add/edit form and previews the chosen photo |
-| Python basics, CGI, GET and POST | `cgi-feedback/cgi-bin/rate.py` (GET shows the form, POST saves a rating) |
-| MySQL CRUD on the command line | `sql/setup.sql`, `sql/crud_demo.sql` |
-| Python DB connectivity with MySQL Connector | `rate.py` uses `mysql.connector` |
-| JSON parsing in Python | `load_recipes` reads `seed/recipes.json`; Export JSON link writes JSON |
-| jQuery + AJAX | `search.js`: live search calls `/api/search/?ing=...` without reloading |
-| Node.js | `node-board/server.js` serves the page and forwards `/api/` calls to Django |
-| AngularJS | `node-board/public/index.html`: `ng-repeat`, filters, sorting, `$http` |
-| Django MVT, models, views, templates, admin, ORM, URL routing | `recipes/` app |
-
-## Setup (one time)
-
-You need Python 3.10 to 3.14, MySQL 8, and Node.js installed.
-
-**1. Install Python packages**
-
-```bash
-cd RecipeNest
-pip install -r requirements.txt
-```
-
-**2. Create the database in MySQL**
-
-```bash
-mysql -u root -p
-```
-```sql
-SOURCE sql/setup.sql;
-exit
-```
-(Use the full path to `setup.sql` if MySQL can't find it.)
-
-**3. Set your MySQL password as an environment variable**
-
-Don't type your password into any file. Both `recipenest/settings.py` and `cgi-feedback/cgi-bin/rate.py` read it from `MYSQL_PASSWORD`. You can also set `DJANGO_SECRET_KEY` (optional for local use).
-
-Windows CMD:
-```bat
-set MYSQL_PASSWORD=your-mysql-password
-set DJANGO_SECRET_KEY=any-long-random-string
-```
-
-PowerShell:
-```powershell
-$env:MYSQL_PASSWORD="your-mysql-password"
-$env:DJANGO_SECRET_KEY="any-long-random-string"
-```
-
-Mac/Linux:
-```bash
-export MYSQL_PASSWORD="your-mysql-password"
-export DJANGO_SECRET_KEY="any-long-random-string"
-```
-
-These only last for the current terminal window, so set them in every terminal you use for the Django and CGI servers (steps 4 and "Running it").
-
-**4. Create Django tables, load starter recipes, make an admin user**
-
-```bash
-python manage.py migrate
-python manage.py load_recipes
-python manage.py createsuperuser
-```
-
-## Running it (3 terminals)
-
-| Terminal | Command | Open |
-|---|---|---|
-| 1, Django (main site) | `python manage.py runserver` | http://127.0.0.1:8000 |
-| 2, CGI ratings | `cd cgi-feedback` then `python -m http.server 8001 --cgi` | http://localhost:8001/cgi-bin/rate.py |
-| 3, Node + AngularJS | `cd node-board` then `node server.js` | http://localhost:3000 |
-
-The navbar links to all three, so once they're running you can move between them from the main site.
-
-## 3-minute demo script
-
-1. Home page: point out the Bootstrap grid and veg / non-veg marks.
-2. Type "tomato" in the search box. Results change without a page reload (jQuery AJAX + Django JSON API).
-3. Click **Add recipe** and submit it empty to show the JavaScript validation. Then fill it in with a photo and save.
-4. Open **Admin** and show the recipe list, filter, and inline edit (Django Admin + ORM).
-5. Open **Quick browse** and click Non-veg, then sort by quickest (Node.js + AngularJS).
-6. Open **Rate a recipe**, submit a rating (CGI POST), and show it in the ratings table.
-7. In the MySQL command line run `SELECT * FROM ratings;` and a few lines from `crud_demo.sql`.
-8. Click **Export JSON** to download all recipes as JSON.
-
-## Common problems
-
-- **`Access denied for user 'root'`**: the password in `settings.py` or `rate.py` doesn't match your MySQL password.
-- **`Unknown database 'recipenest_db'`**: run `sql/setup.sql` first (step 2).
-- **Quick browse says it couldn't load recipes**: the Django server (terminal 1) isn't running.
-- **CGI page downloads instead of running (Mac/Linux)**: run `chmod +x cgi-feedback/cgi-bin/rate.py`.
-- **`--cgi` option not found**: Python 3.15 removed CGI support from `http.server`. Use Python 3.10 to 3.14 for that terminal.
-- **Want to try it without MySQL?** Set `USE_SQLITE=1` before the Django commands (`set USE_SQLITE=1` on Windows CMD, `$env:USE_SQLITE=1` in PowerShell, `export USE_SQLITE=1` on Mac/Linux). The CGI page still needs MySQL.
